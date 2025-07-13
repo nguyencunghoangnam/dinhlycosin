@@ -1,0 +1,578 @@
+
+<!DOCTYPE html>
+
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Bài toán tam giác</title>
+<style>
+    :root {
+      --main-color: #2c3e50;
+      --accent-color: #3498db;
+      --bg-light: #f4f6f8;
+      --box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      background-color: var(--bg-light);
+      color: var(--main-color);
+    }
+    .form-section {
+      max-width: 360px;
+      background: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: var(--box-shadow);
+    }
+    label {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #triangle-canvas {
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: white;
+      box-shadow: var(--box-shadow);
+    }
+    .question {
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    #solution {
+      margin-top: 15px;
+      padding: 10px;
+      background: #ecf9f9;
+      border-left: 4px solid var(--accent-color);
+      border-radius: 8px;
+    }
+    math {
+      display: block;
+      margin-top: 8px;
+      font-size: 16px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+    }
+    .form-section {
+      max-width: 320px;
+    }
+    label, input, button {
+      display: block;
+      margin-bottom: 10px;
+    }
+    #triangle-canvas {
+      border: 1px solid #ccc;
+    }
+    .question {
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    #ch-button {
+      margin-top: 10px;
+      display: none;
+    }
+    math {
+      display: block;
+      margin-top: 8px;
+    }
+  
+#pitago-proof {
+  max-width: 600px;
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  overflow-x: auto;
+}
+</style>
+<style>
+    #pitago-proof {
+        font-family: "Latin Modern Math", "Cambria Math", "STIX Math", "Times New Roman", serif;
+        font-size: 17px;
+        line-height: 1.6;
+    }
+    </style>
+<style>
+  .page-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    background: linear-gradient(to right, #3498db, #2ecc71);
+    color: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+  }
+  body {
+    padding-top: 100px; /* Đẩy nội dung xuống để không bị che bởi tiêu đề */
+  }
+</style>
+</head>
+<body>
+<div class="page-header">🔍 Khám phá định lý Cosin</div>
+<div class="form-section">
+<div class="question" id="question">
+      Cho tam giác ABC, cạnh AB = 30, AC = 40, góc A = 90°. Tính cạnh BC.
+    </div>
+<label for="ab">Cạnh AB:</label>
+<input id="ab" min="1" type="number" value="30"/>
+<label for="ac">Cạnh AC:</label>
+<input id="ac" min="1" type="number" value="40"/>
+<label for="angleA">Góc A (độ):</label>
+<input id="angleA" max="179" min="1" type="number" value="90"/>
+<button onclick="setAngle60()">Chọn góc A = 60°</button>
+<button id="ch-button" onclick="toggleCHSolution()">Ẩn/Hiện lời giải dùng đường cao CH</button>
+<button id="cos-button" onclick="toggleCosSolution()">Ẩn/Hiện lời giải dùng định lý cosin</button>
+<button onclick="randomizeInputs()">Ngẫu nhiên</button>
+<button onclick="testQuestion()">Câu hỏi kiểm tra</button>
+<div>
+<strong>Đáp án:</strong> <span id="result">BC = 50</span>
+</div>
+<div id="solution" style="margin-top: 10px; color: green;"></div>
+<div id="answer-section" style="margin-top: 10px;"></div></div>
+<canvas height="500" id="triangle-canvas" width="500"></canvas>
+<script>
+    const abInput = document.getElementById("ab");
+    const acInput = document.getElementById("ac");
+    const angleInput = document.getElementById("angleA");
+    const questionEl = document.getElementById("question");
+    const resultEl = document.getElementById("result");
+    const canvas = document.getElementById("triangle-canvas");
+    const ctx = canvas.getContext("2d");
+    const chButton = document.getElementById("ch-button");
+    const solutionEl = document.getElementById("solution");
+
+    let chSolutionVisible = false;
+
+    function toRadians(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    function updateQuestionAndAnswer() {
+      const AB = parseFloat(abInput.value);
+      const AC = parseFloat(acInput.value);
+      const angleA = parseFloat(angleInput.value);
+
+      questionEl.textContent = `Cho tam giác ABC, cạnh AB = ${AB}, AC = ${AC}, góc A = ${angleA}°. Tính cạnh BC.`;
+
+      const angleRad = toRadians(angleA);
+      const BC = Math.sqrt(AB * AB + AC * AC - 2 * AB * AC * Math.cos(angleRad));
+      resultEl.textContent = `BC = ${BC.toFixed(2)}`;
+
+      drawTriangle(AB, AC, angleRad);
+
+      if (angleA === 90) {
+        chButton.style.display = "none";
+        solutionEl.innerHTML = `
+        <strong>Áp dụng định lý Pitago:</strong>
+        <math><mrow>
+          <msup><mi>BC</mi><mn>2</mn></msup>
+          <mo>=</mo>
+          <msup><mi>AB</mi><mn>2</mn></msup>
+          <mo>+</mo>
+          <msup><mi>AC</mi><mn>2</mn></msup>
+        </mrow></math>
+        <math><mrow>
+          <msup><mi>BC</mi><mn>2</mn></msup>
+          <mo>=</mo>
+          <mn>${(AB ** 2)}</mn><mo>+</mo><mn>${(AC ** 2)}</mn>
+          <mo>=</mo><mn>${(AB ** 2 + AC ** 2).toFixed(2)}</mn>
+        </mrow></math>
+        <math><mrow>
+          <mi>BC</mi><mo>=</mo>
+          <msqrt><mn>${(AB ** 2 + AC ** 2).toFixed(2)}</mn></msqrt>
+          <mo>=</mo><mn>${BC.toFixed(2)}</mn>
+        </mrow></math>`;
+      } else {
+        chButton.style.display = "block";
+        solutionEl.innerHTML = "";
+        chSolutionVisible = false;
+      }
+    }
+
+    function drawTriangle(AB, AC, angleRad, drawCH=false) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const scale = 4;
+      const offsetX = 80;
+      const offsetY = 400;
+
+      const Ax = offsetX;
+      const Ay = offsetY;
+
+      const Bx = offsetX + AB * scale;
+      const By = offsetY;
+
+      const Cx = offsetX + AC * scale * Math.cos(angleRad);
+      const Cy = offsetY - AC * scale * Math.sin(angleRad);
+
+      ctx.beginPath();
+      ctx.moveTo(Ax, Ay);
+      ctx.lineTo(Bx, By);
+      ctx.lineTo(Cx, Cy);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.fillText("A", Ax - 10, Ay + 15);
+      ctx.fillText("B", Bx + 5, By + 15);
+      ctx.fillText("C", Cx + 5, Cy - 10);
+
+      if (drawCH) {
+        const AH = AC * Math.cos(angleRad);
+        const Hx = Ax + AH * scale;
+        const Hy = Ay;
+
+        ctx.beginPath();
+        ctx.moveTo(Cx, Cy);
+        ctx.lineTo(Hx, Hy);
+        ctx.strokeStyle = "red";
+        ctx.stroke();
+        ctx.strokeStyle = "black";
+        ctx.fillText("H", Hx + 5, Hy + 15);
+
+        ctx.beginPath();
+        ctx.setLineDash((AH < 0 || AH > AB) ? [5, 5] : []);
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Hx, Hy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    function showCHSolution() {
+      const AB = parseFloat(abInput.value);
+      const AC = parseFloat(acInput.value);
+      const angleA = parseFloat(angleInput.value);
+      const angleRad = toRadians(angleA);
+
+      const AH = AC * Math.cos(angleRad);
+      const CH = AC * Math.sin(angleRad);
+      const BH = AB - AH;
+      const BC = Math.sqrt(CH*CH + BH*BH);
+
+      drawTriangle(AB, AC, angleRad, true);
+
+      solutionEl.innerHTML = `
+        <strong>Giải bằng đường cao CH:</strong>
+        <math><mrow><mi>CH</mi><mo>=</mo><mi>AC</mi><mo>×</mo><mi>sin</mi><mo>(</mo><mn>${angleA}°</mn><mo>)</mo><mo>=</mo><mn>${CH.toFixed(2)}</mn></mrow></math>
+${AH < 0 
+  ? `<math><mrow><mover><mi>AH</mi><mo stretchy="true">‾‾‾</mo></mover><mo>=</mo><mi>AC</mi><mo>×</mo><mi>cos</mi><mo>(</mo><mn>${angleA}°</mn><mo>)</mo><mo>=</mo><mn>${AH.toFixed(2)}</mn></mrow></math>` 
+  : `<math><mrow><mi>AH</mi><mo>=</mo><mi>AC</mi><mo>×</mo><mi>cos</mi><mo>(</mo><mn>${angleA}°</mn><mo>)</mo><mo>=</mo><mn>${AH.toFixed(2)}</mn></mrow></math>`}
+
+        <math><mrow><mi>BH</mi><mo>=</mo><mi>AB</mi><mo>-</mo><mi>AH</mi><mo>=</mo><mn>${AB}</mn><mo>-</mo><mn>${AH < 0 ? `(${AH.toFixed(2)})` : AH.toFixed(2)}</mn><mo>=</mo><mn>${BH.toFixed(2)}</mn></mrow></math>
+        <math><mrow><msup><mi>BC</mi><mn>2</mn></msup><mo>=</mo><msup><mi>CH</mi><mn>2</mn></msup><mo>+</mo><msup><mi>BH</mi><mn>2</mn></msup><mo>=</mo><mn>${(CH**2).toFixed(2)}</mn><mo>+</mo><mn>${(BH**2).toFixed(2)}</mn><mo>=</mo><mn>${(CH**2+BH**2).toFixed(2)}</mn></mrow></math>
+        <math><mrow><mi>BC</mi><mo>=</mo><msqrt><mn>${(CH**2+BH**2).toFixed(2)}</mn></msqrt><mo>=</mo><mn>${BC.toFixed(2)}</mn></mrow></math>
+      `;
+    }
+
+    function toggleCHSolution() {
+      chSolutionVisible = !chSolutionVisible;
+      const AB = parseFloat(abInput.value);
+      const AC = parseFloat(acInput.value);
+      const angleRad = toRadians(parseFloat(angleInput.value));
+      if (chSolutionVisible) {
+        showCHSolution();
+      } else {
+        solutionEl.innerHTML = "";
+        drawTriangle(AB, AC, angleRad, false);
+      }
+    }
+
+    function setAngle60() {
+      angleInput.value = 60;
+      
+    let cosSolutionVisible = false;
+
+    function toggleCosSolution() {
+      cosSolutionVisible = !cosSolutionVisible;
+      const AB = parseFloat(abInput.value);
+      const AC = parseFloat(acInput.value);
+      const angleA = parseFloat(angleInput.value);
+      const angleRad = toRadians(angleA);
+      const BC = Math.sqrt(AB * AB + AC * AC - 2 * AB * AC * Math.cos(angleRad));
+
+      if (cosSolutionVisible) {
+        solutionEl.innerHTML += `
+          <div id="cos-solution" style="margin-top: 10px; color: blue;">
+            <strong>Giải bằng định lý cosin:</strong>
+            <math><mrow>
+              <msup><mi>BC</mi><mn>2</mn></msup><mo>=</mo>
+              <msup><mi>AB</mi><mn>2</mn></msup><mo>+</mo>
+              <msup><mi>AC</mi><mn>2</mn></msup><mo>-</mo>
+              <mn>2</mn><mo>×</mo><mi>AB</mi><mo>×</mo><mi>AC</mi><mo>×</mo><mi>cos</mi><mo>(</mo><mn>${angleA}°</mn><mo>)</mo>
+            </mrow></math>
+            <math><mrow>
+              <mi>BC</mi><mo>=</mo><msqrt><mn>${BC.toFixed(2)}</mn></msqrt><mo>=</mo><mn>${BC.toFixed(2)}</mn>
+            </mrow></math>
+          </div>
+        `;
+      } else {
+        const cosSolutionDiv = document.getElementById("cos-solution");
+        if (cosSolutionDiv) cosSolutionDiv.remove();
+      }
+    }
+
+    
+    function randomizeInputs() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+  
+    function testQuestion() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+      updateQuestionAndAnswer();
+    }
+
+    updateQuestionAndAnswer();
+    }
+
+
+    function testQuestion() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+      updateQuestionAndAnswer();
+    }
+
+    updateQuestionAndAnswer();
+    }
+
+    abInput.addEventListener("input", updateQuestionAndAnswer);
+    acInput.addEventListener("input", updateQuestionAndAnswer);
+    angleInput.addEventListener("input", updateQuestionAndAnswer);
+
+    
+    let cosSolutionVisible = false;
+
+    function toggleCosSolution() {
+      cosSolutionVisible = !cosSolutionVisible;
+      const AB = parseFloat(abInput.value);
+      const AC = parseFloat(acInput.value);
+      const angleA = parseFloat(angleInput.value);
+      const angleRad = toRadians(angleA);
+      const BC = Math.sqrt(AB * AB + AC * AC - 2 * AB * AC * Math.cos(angleRad));
+
+      if (cosSolutionVisible) {
+        solutionEl.innerHTML += `
+          <div id="cos-solution" style="margin-top: 10px; color: blue;">
+            <strong>Giải bằng định lý cosin:</strong>
+            <math><mrow>
+              <msup><mi>BC</mi><mn>2</mn></msup><mo>=</mo>
+              <msup><mi>AB</mi><mn>2</mn></msup><mo>+</mo>
+              <msup><mi>AC</mi><mn>2</mn></msup><mo>-</mo>
+              <mn>2</mn><mo>×</mo><mi>AB</mi><mo>×</mo><mi>AC</mi><mo>×</mo><mi>cos</mi><mo>(</mo><mn>${angleA}°</mn><mo>)</mo>
+            </mrow></math>
+            <math><mrow>
+              <mi>BC</mi><mo>=</mo><msqrt><mn>${BC.toFixed(2)}</mn></msqrt><mo>=</mo><mn>${BC.toFixed(2)}</mn>
+            </mrow></math>
+          </div>
+        `;
+      } else {
+        const cosSolutionDiv = document.getElementById("cos-solution");
+        if (cosSolutionDiv) cosSolutionDiv.remove();
+      }
+    }
+
+    
+    function randomizeInputs() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+  
+    function testQuestion() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+      updateQuestionAndAnswer();
+    }
+
+    updateQuestionAndAnswer();
+    }
+
+
+    function testQuestion() {
+      const randomAB = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAC = Math.floor(Math.random() * 81) + 20; // 20–100
+      const randomAngle = Math.floor(Math.random() * 106) + 15; // 15–120
+
+      abInput.value = randomAB;
+      acInput.value = randomAC;
+      angleInput.value = randomAngle;
+      updateQuestionAndAnswer();
+    }
+
+    updateQuestionAndAnswer();
+  
+const answerSection = document.getElementById("answer-section");
+
+function testQuestion() {
+  const randomAB = Math.floor(Math.random() * 81) + 20;
+  const randomAC = Math.floor(Math.random() * 81) + 20;
+  const randomAngle = Math.floor(Math.random() * 106) + 15;
+
+  abInput.value = randomAB;
+  acInput.value = randomAC;
+  angleInput.value = randomAngle;
+  updateQuestionAndAnswer();
+
+  // Hide the actual result
+  resultEl.textContent = "";
+
+  // Show input field for user to answer
+  answerSection.innerHTML = `
+    <label for="userAnswer">Nhập đáp án của bạn (BC):</label>
+    <input type="number" id="userAnswer" step="0.01"/>
+    <button onclick="checkAnswer()">Kiểm tra</button>
+    <div id="feedback" style="margin-top: 10px;"></div>
+  `;
+}
+
+function checkAnswer() {
+  const userAnswer = parseFloat(document.getElementById("userAnswer").value);
+  const AB = parseFloat(abInput.value);
+  const AC = parseFloat(acInput.value);
+  const angleRad = toRadians(parseFloat(angleInput.value));
+  const correctAnswer = Math.sqrt(AB*AB + AC*AC - 2*AB*AC*Math.cos(angleRad));
+
+  const feedback = document.getElementById("feedback");
+  resultEl.textContent = `Đáp án đúng: BC = ${correctAnswer.toFixed(2)}`;
+
+  if (Math.abs(userAnswer - correctAnswer) < 0.1) {
+    feedback.innerHTML = "<span style='color: green;'>✔ Chính xác! Giỏi lắm!</span>";
+  } else {
+    feedback.innerHTML = "<span style='color: red;'>✘ Chưa đúng, hãy xem lại cách tính!</span>";
+  }
+}
+</script>
+<div class="form-section" id="pitago-proof">
+<strong>Chứng minh định lý cosin bằng định lý Pitago:</strong>
+<p>Giả sử tam giác ABC với góc A nhọn. Dựng đường cao từ điểm C xuống AB, cắt AB tại H.</p>
+<p>Gọi AH = AC·cosA, CH = AC·sinA.</p>
+<p>Vì tam giác CHB vuông tại H, áp dụng định lý Pitago:</p>
+<math>
+<mrow>
+<msup><mi>BC</mi><mn>2</mn></msup>
+<mo>=</mo>
+<msup><mi>CH</mi><mn>2</mn></msup>
+<mo>+</mo>
+<msup><mi>BH</mi><mn>2</mn></msup>
+</mrow>
+</math>
+<p>Thay CH = AC·sinA và BH = AB − AC·cosA:</p>
+<math>
+<mrow>
+<msup><mi>BC</mi><mn>2</mn></msup>
+<mo>=</mo>
+<msup>
+<mrow>
+<mo>(</mo><mi>AC</mi><mi>sin</mi><mo>A</mo><mo>)</mo>
+</mrow>
+<mn>2</mn>
+</msup>
+<mo>+</mo>
+<msup>
+<mrow>
+<mo>(</mo><mi>AB</mi><mo>-</mo><mi>AC</mi><mi>cos</mi><mo>A</mo><mo>)</mo>
+</mrow>
+<mn>2</mn>
+</msup>
+</mrow>
+</math>
+<p>Khai triển:</p>
+<math>
+<mrow>
+<msup><mi>BC</mi><mn>2</mn></msup>
+<mo>=</mo>
+<msup><mi>AC</mi><mn>2</mn></msup><msup><mi>sin</mi><mn>2</mn></msup><mo>A</mo>
+<mo>+</mo>
+<msup><mi>AB</mi><mn>2</mn></msup>
+<mo>-</mo>
+<mn>2</mn><mi>AB</mi><mo>·</mo><mi>AC</mi><mi>cos</mi><mo>A</mo>
+<mo>+</mo>
+<msup><mi>AC</mi><mn>2</mn></msup><msup><mi>cos</mi><mn>2</mn></msup><mo>A</mo>
+</mrow>
+</math>
+<p>Gộp các hạng tử:</p>
+<math>
+<mrow>
+<msup><mi>BC</mi><mn>2</mn></msup>
+<mo>=</mo>
+<msup><mi>AB</mi><mn>2</mn></msup>
+<mo>+</mo>
+<msup><mi>AC</mi><mn>2</mn></msup><mo>(</mo><msup><mi>sin</mi><mn>2</mn></msup><mo>A</mo>
+<mo>+</mo>
+<msup><mi>cos</mi><mn>2</mn></msup><mo>A</mo><mo>)</mo>
+<mo>-</mo>
+<mn>2</mn><mi>AB</mi><mo>·</mo><mi>AC</mi><mi>cos</mi><mo>A</mo>
+</mrow>
+</math>
+<p>Do sin²A + cos²A = 1 nên ta được:</p>
+<math>
+<mrow>
+<msup><mi>BC</mi><mn>2</mn></msup>
+<mo>=</mo>
+<msup><mi>AB</mi><mn>2</mn></msup>
+<mo>+</mo>
+<msup><mi>AC</mi><mn>2</mn></msup>
+<mo>-</mo>
+<mn>2</mn><mi>AB</mi><mo>·</mo><mi>AC</mi><mi>cos</mi><mo>A</mo>
+</mrow>
+</math>
+<p>Nếu A tù thì AH = ACcos(180° − A) ⇒ BH = AB + ACcos(180° − A). Sau đó chứng minh tương tự ta cũng có kết quả trên. Còn lại góc A = 90° thì định lý đương nhiên đúng.</p>
+</div></body>
+</html>
