@@ -498,6 +498,40 @@ function checkAnswer() {
     feedback.innerHTML = "<span style='color: red;'>✘ Chưa đúng, hãy xem lại cách tính!</span>";
   }
 }
+
+
+let hasAnswered = false;
+
+function disableAllControls() {
+  document.querySelectorAll("input, button").forEach(el => {
+    if (el.id !== "userAnswer" && el.innerText !== "Kiểm tra") {
+      el.disabled = true;
+    }
+  });
+}
+
+function enableAllControls() {
+  document.querySelectorAll("input, button").forEach(el => {
+    el.disabled = false;
+  });
+}
+
+const originalTestQuestion = testQuestion;
+testQuestion = function() {
+  originalTestQuestion();
+  disableAllControls();
+  hasAnswered = false;
+};
+
+const originalCheckAnswer = checkAnswer;
+checkAnswer = function() {
+  if (hasAnswered) return;
+  hasAnswered = true;
+  const userInput = document.getElementById("userAnswer");
+  if (userInput) userInput.disabled = true;
+  enableAllControls();
+  originalCheckAnswer();
+};
 </script>
 <div class="form-section" id="pitago-proof">
 <strong>Chứng minh định lý cosin bằng định lý Pitago:</strong>
